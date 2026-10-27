@@ -1,0 +1,22 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+
+# Configuración local y datos generados (pueden contener información de clientes)
+backend/.env
+backend/data/
+backend/storage/
+backend/fixtures/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# Capas DANE completas (solo locales; superan el límite de GitHub). El portal usa dane/, que sí va en el repo.
+/MGN2025_DANE/
+/VEREDAS_DANE_2024/
+
+# Herramientas locales
+.claude/

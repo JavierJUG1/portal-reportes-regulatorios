@@ -1,0 +1,30 @@
+{
+  "_nota": "Clasificación de ítems de factura (Sales Invoice Item.item_code) para la hoja T1_2_ISP_INGRESOS. Servicios: 101 Acceso fijo a Internet, 108 Televisión por suscripción, 109 Telefonía fija, 110 Internet dedicado a ISP. Los cargos operativos del servicio (reconexión, traslado, instalación, visitas) y los alquileres mensuales de equipos se suman a su servicio. Los ítems en 'excluir' (penalidades, ventas de equipos o activos) no son ingresos por la prestación del servicio y no se reportan. Un ítem que no aparezca en ninguna lista se reporta en las advertencias de la generación y NO se suma. Para los clientes de config/clientes_isp.json, todo lo clasificado como 101 pasa a 110. Reglas acordadas con Regulatorio el 26/10/2026.",
+  "servicios": {
+    "Internet Estrato 1,2 y 3": 101,
+    "Internet Estrato 1,2": 101,
+    "Internet": 101,
+    "Internet B2B": 101,
+    "Internet Estrato PN B2B 3": 101,
+    "Internet Estrato PN B2B 1, 2": 101,
+    "414570-1": 101,
+    "Item0155": 101,
+    "Soporte Premium": 101,
+    "Tarifa de reconexión": 101,
+    "Cobro de Instalacion": 101,
+    "Mark022-5": 101,
+    "TRASLADO": 101,
+    "VISITA TECNICA": 101,
+    "Punto cableado adicional": 101,
+    "Canais de TV": 108,
+    "Item0173": 108
+  },
+  "excluir": [
+    "ACTIVO FIJO",
+    "Clausula de permanencia",
+    "SUST-ONU",
+    "SUST. FIBRA",
+    "Item0171",
+    "Item0188"
+  ]
+}

@@ -1,0 +1,4 @@
+# Capas DANE y plantillas: binarios (sin conversión de fin de línea)
+dane/** binary
+*.xlsx binary
+*.png binary

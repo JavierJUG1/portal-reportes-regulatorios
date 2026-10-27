@@ -1,0 +1,37 @@
+{
+  "_nota": "Mapeo de Issue Type (ERPNext → Issue) a la hoja T1_2_ISP_QUEJAS. Solo se cuentan los tipos listados en 'tipos'. servicio: 1 Telefonía fija, 3 Internet fijo, 5 Televisión por suscripción. Resultado de una queja cerrada: 1) el 'resultado' del tipo, si lo tiene; 2) si no, el de 'resultado_por_tipologia'; 3) si no, 'segun_culpa' (campo 'Interrupcion Por GIGA' = No → en contra; Si o vacío → a favor). Valores: 'a_favor', 'en_contra', 'segun_culpa'. Las quejas abiertas cuentan en NUMERO_QUEJAS pero no en a favor / en contra. Reglas acordadas con Regulatorio el 26/10/2026.",
+  "servicio_por_defecto": 3,
+  "estados_cerrados": ["Resolved", "Closed"],
+  "resultado_por_tipologia": {
+    "E1": "a_favor",
+    "E3": "a_favor",
+    "A1": "a_favor"
+  },
+  "tipologia_recursos": "J1",
+  "recursos_reposicion": ["CC - RADICACIÓN DE RECURSO DE REPOSICIÓN"],
+  "recursos_apelacion": ["FN-AJUSTE POR CUMPLIMIENTO DE RESOLUCIÓN DE LA SIC"],
+  "tipos": {
+    "CC-QUEJA": {"tipologia": "J1"},
+    "CC- RADICADO DE UNA QUEJA FORMAL POR CORREO": {"tipologia": "J1"},
+    "CC-RADICADO DE UN PQRS": {"tipologia": "J1"},
+    "CC-RADICADO DE UN PQRS SUPLANTACION DE IDENTIDAD": {"tipologia": "A4"},
+    "OP - SIN CONEXIÓN A INTERNET": {"tipologia": "E1"},
+    "OP-FALLA MASIVA": {"tipologia": "E1"},
+    "OP- INTERNET INTERMITENTE": {"tipologia": "E3"},
+    "OP- INTERMITENCIA EN SEÑAL DE INTERNET CORPORATIVO": {"tipologia": "E3"},
+    "OP-SOPORTE RECURRENTE": {"tipologia": "E3"},
+    "OP- GARANTÍA DE INSTALACIÓN": {"tipologia": "E3"},
+    "OP- INTERMITENCIA EN TV": {"tipologia": "E3", "servicio": 5},
+    "OP-FALLA EN APPS DEL SETBOX (NETFLIX-YOUTUBE)": {"tipologia": "E3", "servicio": 5},
+    "OP- CONTROL DE  TV BOX- FIRESTICK CON FALLA O DAÑO": {"tipologia": "E3", "servicio": 5},
+    "OP- ENTREGA TV BOX PENDIENTE": {"tipologia": "A1", "servicio": 5},
+    "OP-VELOCIDAD CONTRATADA (MBPS)": {"tipologia": "A1"},
+    "FN-AJUSTE DE FACTURA": {"tipologia": "F1", "resultado": "a_favor"},
+    "FN-FACTURAS DUPLICADAS": {"tipologia": "F1", "resultado": "a_favor"},
+    "FN-AJUSTE DE FACTURA SERVICIO SIN CONEXIÓN": {"tipologia": "F1", "resultado": "a_favor"},
+    "FN-REVISION DE FACTURAS": {"tipologia": "F1"},
+    "FN- AJUSTE POR INCREMENTO DE TARIFA": {"tipologia": "F2", "resultado": "a_favor"},
+    "FN-AJUSTE COBRO POR RECONEXIÓN": {"tipologia": "F7", "resultado": "a_favor"},
+    "FN- FALLA PLATAFORMA DE PAGO": {"tipologia": "H1"}
+  }
+}

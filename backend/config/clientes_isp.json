@@ -1,0 +1,16 @@
+{
+  "_nota": "Clientes que son proveedores de Internet (venta mayorista). Sus ingresos de Internet se reportan como servicio 110 (Internet dedicado a ISP) en T1_2_ISP_INGRESOS y sus suscripciones NO se cuentan en T1_2_ISP_ACCESOS. Usar el nombre exacto del cliente en ERPNext (campo party de la suscripción). Lista acordada con Regulatorio el 26/10/2026.",
+  "clientes": [
+    "CABLE SAS",
+    "Serkoi S.A.S",
+    "TRIPLE NET SAS",
+    "WN CONECTADOS.COM SAS",
+    "ZUMA COMUNICACIONES DE COLOMBIA SAS",
+    "Telepromtv SAS",
+    "COLOMBIA TELECONET S A S",
+    "COLISEO LIVE SAS",
+    "CHATNET COMUNICACIONES SAS",
+    "GB NET TV SAS",
+    "INTERCONEXIONES.NET SAS"
+  ]
+}
