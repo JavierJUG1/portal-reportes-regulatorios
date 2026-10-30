@@ -36,6 +36,12 @@ def _path(name: str, default: Path) -> Path:
     return p if p.is_absolute() else (BASE_DIR / p).resolve()
 
 
+def _base_path(value: str | None) -> str:
+    """"portal_reportes_crc/" → "/portal_reportes_crc"; vacío o "/" → "" (raíz)."""
+    clean = (value or "").strip().strip("/")
+    return f"/{clean}" if clean else ""
+
+
 class Settings:
     # Entorno
     APP_ENV = _env("APP_ENV", "development")
@@ -44,6 +50,8 @@ class Settings:
     SECRET_KEY = _env("SECRET_KEY", "dev-only-change-me")
     CORS_ORIGINS = _list("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
     FRONTEND_DIST = _path("FRONTEND_DIST", PROJECT_DIR / "frontend" / "dist")
+    # Subruta donde se publica el portal detrás de un proxy (p. ej. /portal_reportes_crc); vacío = raíz del dominio.
+    BASE_PATH = _base_path(_env("BASE_PATH", ""))
 
     # ERPNext
     ERPNEXT_URL = (_env("ERPNEXT_URL", "https://next.gigafibra.co") or "").rstrip("/")
@@ -78,6 +86,8 @@ class Settings:
     STORAGE_DIR = _path("STORAGE_DIR", BASE_DIR / "storage")
     ERPNEXT_FILE_FOLDER = _env("ERPNEXT_FILE_FOLDER", "Home")
     DB_PATH = _path("DB_PATH", BASE_DIR / "data" / "portal.db")
+    # Fotos mensuales: respuesta de la API guardada al cierre de cada mes (ver app/fotos.py)
+    FOTOS_DIR = _path("FOTOS_DIR", BASE_DIR / "data" / "fotos")
 
     # Plantillas CRC
     TEMPLATES_DIR = _path("TEMPLATES_DIR", BASE_DIR / "templates")

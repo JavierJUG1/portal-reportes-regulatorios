@@ -4,6 +4,7 @@ import { MotionConfig } from "framer-motion";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { ROUTER_BASENAME } from "./lib/base";
 import App from "./App";
 import { ToastProvider } from "./components/Toast";
 import "./styles/tokens.css";
@@ -20,7 +21,7 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       {/* Respeta prefers-reduced-motion del sistema */}
       <MotionConfig reducedMotion="user">
-        <BrowserRouter>
+        <BrowserRouter basename={ROUTER_BASENAME}>
           <ToastProvider>
             <App />
           </ToastProvider>

@@ -93,7 +93,7 @@ def _run(version_id: int) -> None:
     client = None
     try:
         client = get_client()
-        ctx = BuildContext(client)
+        ctx = BuildContext(client, origen=version["trigger"])
         data, stats = report.builder(period, ctx)
         filename = report.filename(period, version["version"])
         key = get_storage().save(report.key, period.year, filename, data)

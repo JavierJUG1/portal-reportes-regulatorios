@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuthConfig } from "../api/hooks";
+import { withBase } from "../lib/base";
 import type { User } from "../api/types";
 import btnLoader from "../assets/figma/btn-loader.svg";
 import estadoAlert from "../assets/figma/estado-alert.svg";
@@ -25,7 +26,7 @@ export default function Login() {
   const next = params.get("next") || "/";
   const sso = cfg?.mode === "erpnext" && cfg.oauth_ready;
   // Al volver de ERPNext se abre la página que el usuario había pedido.
-  const ssoUrl = `/api/auth/login${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`;
+  const ssoUrl = withBase(`/api/auth/login${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`);
 
   // SSO silencioso: si ya hay sesión en ERPNext, vuelve autenticado sin pedir credenciales.
   // No se hace tras "Cerrar sesión" (?salir=1) ni si ERPNext devolvió un error, para no entrar en bucle.

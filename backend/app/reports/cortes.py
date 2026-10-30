@@ -13,6 +13,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from .. import fotos
 from ..config import settings
 from ..periods import Period, fmt_datetime, now
 from .base import BuildContext, geo_stats, to_bytes
@@ -89,6 +90,7 @@ def _summary_block(ws, start_row: int, title: str, rows: list[tuple[str, Any]]) 
 def build(period: Period, ctx: BuildContext) -> tuple[bytes, dict[str, Any]]:
     snap = ctx.snapshot(period.start, period.end)
     rows = ctx.enriched(period.start, period.end)
+    foto = fotos.info(ctx.foto(period))
 
     wb = Workbook()
     resumen = wb.active
@@ -164,6 +166,8 @@ def build(period: Period, ctx: BuildContext) -> tuple[bytes, dict[str, Any]]:
         ("Fecha de corte", period.end.isoformat()),
         ("Fuente", f"ERPNext · {settings.SNAPSHOT_METHOD}"),
         ("Generado", fmt_datetime(now())),
+        ("Datos: foto del cierre tomada", foto["tomada_label"] + (
+            " (tardía: planes y ubicación de ese día)" if foto["tardia"] else "")),
         ("Total de suscripciones en el corte", int(snap.get("total") or len(rows))),
     ])
     quarter, mes = period.quarter(), period.month_in_quarter
@@ -198,5 +202,5 @@ def build(period: Period, ctx: BuildContext) -> tuple[bytes, dict[str, Any]]:
     stats = {"suscripciones": len(rows), "estados": dict(by_status),
              "conectadas": sum(by_service.values()), "trimestre": quarter.id, "mes_trimestre": mes,
              "suscriptores_f6": suscriptores_f6, "f6_por_estado": dict(f6_by_status),
-             "accesos_t12": accesos_t12, **gs}
+             "accesos_t12": accesos_t12, "foto": foto, **gs}
     return to_bytes(wb), stats

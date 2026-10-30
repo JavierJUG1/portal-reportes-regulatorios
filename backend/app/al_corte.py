@@ -23,8 +23,14 @@ from typing import Any
 from . import periods
 from .classify import PlanCatalog, split_plans
 from .config import settings
+from .erpnext import ERPNextError
 
 log = logging.getLogger("portal.al_corte")
+
+
+def _is_timeout(exc: ERPNextError) -> bool:
+    """504 del proxy de ERPNext o tiempo de espera agotado (ventana con demasiadas versiones)."""
+    return exc.detail.startswith("504 ") or "Timeout" in exc.detail or "tardó demasiado" in exc.user_message
 
 FIELD_MAP = {
     "custom_estrato": "estrato",
@@ -65,13 +71,24 @@ def load_events(client: Any, since: str) -> dict[str, list[dict[str, Any]]]:
         weeks.append(w)
         w += timedelta(days=7)
 
+    def _versions(start_w: datetime, stop_w: datetime) -> list[dict[str, Any]]:
+        """Una ventana de tabVersion; si ERPNext se demora (504/timeout), la parte en mitades hasta 1 hora."""
+        try:
+            return client.subscription_versions(start_w, stop_w, LIKES)
+        except ERPNextError as exc:
+            if stop_w - start_w <= timedelta(hours=1) or not _is_timeout(exc):
+                raise
+            mid = start_w + (stop_w - start_w) / 2
+            log.info("tabVersion %s–%s tardó demasiado; se consulta en dos partes", start_w, stop_w)
+            return _versions(start_w, mid) + _versions(mid, stop_w)
+
     def fetch(week: datetime) -> list[dict[str, Any]]:
         stop = week + timedelta(days=7)
         cache = CACHE_DIR / f"{week:%Y%m%d}.json"
         if cache.exists():
             with open(cache, encoding="utf-8") as fh:
                 return json.load(fh)
-        evs = [e for e in (parse_version(v) for v in client.subscription_versions(week, stop, LIKES)) if e]
+        evs = [e for e in (parse_version(v) for v in _versions(week, stop)) if e]
         if stop < now - timedelta(hours=1):
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
             tmp = cache.with_suffix(".tmp")

@@ -11,7 +11,7 @@ from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 from . import auth, db, permissions, scheduler
@@ -202,6 +202,11 @@ def _enabled_version(vid: int) -> dict[str, Any]:
     return v
 
 
+def _url(path: str) -> str:
+    """Ruta del portal ("/login") → URL pública bajo BASE_PATH ("/portal_reportes_crc/login")."""
+    return settings.BASE_PATH + path
+
+
 def _norm(text: str) -> str:
     return unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode().lower()
 
@@ -251,12 +256,12 @@ def oauth_login(next: str = "") -> Response:  # noqa: A002 - nombre del parámet
 @app.get("/api/auth/callback")
 def oauth_callback(request: Request, code: str = "", state: str = "", error: str = "") -> Response:
     if error or not code:
-        return RedirectResponse(f"/login?error={quote(error or 'cancelado')}", status_code=302)
+        return RedirectResponse(_url(f"/login?error={quote(error or 'cancelado')}"), status_code=302)
     try:
         user = auth.oauth_finish(request, code, state)
     except HTTPException as exc:
-        return RedirectResponse(f"/login?error={quote(str(exc.detail))}", status_code=302)
-    response = RedirectResponse(auth.oauth_next(request) or settings.POST_LOGIN_REDIRECT, status_code=302)
+        return RedirectResponse(_url(f"/login?error={quote(str(exc.detail))}"), status_code=302)
+    response = RedirectResponse(_url(auth.oauth_next(request) or settings.POST_LOGIN_REDIRECT), status_code=302)
     response.delete_cookie(auth.OAUTH_COOKIE, path="/")
     auth.set_session(response, user)
     return response
@@ -458,5 +463,8 @@ def spa(full_path: str) -> Response:
         # Los archivos de /assets llevan hash en el nombre: se pueden guardar en caché indefinidamente.
         cache = "public, max-age=31536000, immutable" if full_path.startswith("assets/") else "no-cache"
         return FileResponse(candidate, headers={"Cache-Control": cache})
-    # index.html sin caché, para que cada actualización del portal se vea de inmediato.
-    return FileResponse(_dist / "index.html", headers={"Cache-Control": "no-cache"})
+    # index.html sin caché (cada actualización se ve de inmediato) y con <base href> = BASE_PATH: el frontend
+    # usa rutas relativas, así funciona en la raíz o en una subruta detrás de nginx.
+    html = (_dist / "index.html").read_text(encoding="utf-8")
+    html = html.replace("<head>", f'<head><base href="{settings.BASE_PATH}/" />', 1)
+    return HTMLResponse(html, headers={"Cache-Control": "no-cache"})

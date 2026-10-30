@@ -1,3 +1,5 @@
+import { withBase } from "../lib/base";
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -18,7 +20,7 @@ async function parseError(res: Response): Promise<ApiError> {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(withBase(path), {
     credentials: "include",
     headers: { Accept: "application/json", ...(init?.body ? { "Content-Type": "application/json" } : {}) },
     ...init,
@@ -41,7 +43,7 @@ export function qs(params: Record<string, string | number | null | undefined>): 
 
 /** Descarga el archivo; resuelve cuando el backend confirma el inicio (cabeceras recibidas). */
 export async function downloadVersion(id: number, onStarted: (filename: string) => void): Promise<void> {
-  const res = await fetch(`/api/versions/${id}/download`, { credentials: "include" });
+  const res = await fetch(withBase(`/api/versions/${id}/download`), { credentials: "include" });
   if (!res.ok) throw await parseError(res);
   const encoded = res.headers.get("X-Filename");
   const filename = encoded ? decodeURIComponent(encoded) : `reporte_${id}.xlsx`;

@@ -67,7 +67,9 @@ def servicio_t12(r: dict[str, Any]) -> int | None:
 
 
 def accesos(period: Period, ctx: BuildContext) -> tuple[list[list[Any]], dict[str, Any]]:
-    rows = ctx.enriched(period.start, period.end)
+    # Accesos al último día del trimestre: foto del mes de cierre (la misma base del corte de ese mes).
+    cierre = period.months()[-1]
+    rows = ctx.enriched(cierre.start, cierre.end)
     counts: Counter[tuple] = Counter()
     sin_velocidad = 0
     mayoristas = 0

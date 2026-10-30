@@ -34,7 +34,7 @@ Datos de configuración del *Portal de reportes regulatorios · CRC y MinTIC*. L
 | Redirect URIs | `http://localhost:8000/api/auth/callback` (y `https://<host-del-portal>/api/auth/callback` al publicarlo, separadas por espacio) |
 | Default Redirect URI | la del entorno donde corre el portal |
 
-*Client ID* → `OAUTH_CLIENT_ID`; *App Client Secret* → `OAUTH_CLIENT_SECRET`.
+*Client ID* → `OAUTH_CLIENT_ID`; *App Client Secret* → `OAUTH_CLIENT_SECRET`. El script `backend/scripts/configurar_oauth.py` lo crea o completa con estos datos y guarda ambos valores en `backend/.env` (ver README, sección 3).
 
 ### Usuario de API
 
@@ -59,6 +59,7 @@ Prueba: `backend\.venv\Scripts\python -m scripts.check_erpnext` (desde `backend/
 | `APP_ENV` | `development` | `production` al publicar con HTTPS (cookies seguras y etiqueta PRODUCCIÓN) |
 | `SECRET_KEY` | *(secreto)* | Firma la sesión del portal; cadena larga y aleatoria |
 | `TIMEZONE` | `America/Bogota` | Zona horaria de cortes y programación |
+| `BASE_PATH` | *(vacío)* local · `/portal_reportes_crc` en el servidor | Subruta donde se publica el portal detrás de nginx |
 
 ### ERPNext
 
@@ -120,6 +121,7 @@ Prueba: `backend\.venv\Scripts\python -m scripts.check_erpnext` (desde `backend/
 | `GEO_MAX_DISTANCE_KM` | `15` | Si la coordenada está más lejos del municipio declarado, se usa la ciudad |
 | `GEO_DEFAULT_MUNICIPIO` | `11001` | Municipio si no hay coordenadas ni ciudad reconocida |
 | `MGN_DIR` / `VEREDAS_DIR` | `dane/MGN2025_DANE` / `dane/VEREDAS_DANE_2024` | Capas DANE |
+| `FOTOS_DIR` | `backend/data/fotos` | Fotos mensuales de la API (respuesta guardada al cierre de cada mes) |
 
 ## Capas DANE (`dane/`)
 
@@ -142,15 +144,17 @@ Las capas completas de clase y veredas superan el límite de 100 MB por archivo 
 | Ruta | Motivo |
 |---|---|
 | `backend/.env` | Claves y configuración del equipo |
-| `backend/data/` | Base de versiones y caché geográfica (se recrean) |
+| `backend/data/` | Base de versiones, **fotos mensuales** de la API (datos de clientes; no se recrean: respaldarlas con los Excel) y caché geográfica |
 | `backend/storage/` | Excel generados: los cortes tienen datos de clientes |
 | `frontend/node_modules/`, `frontend/dist/` | Dependencias y compilado (`npm install`, `npm run build`) |
 | `MGN2025_DANE/`, `VEREDAS_DANE_2024/` | Capas DANE completas (solo locales) |
 
 ## Puesta en marcha en otro equipo
 
+Para un servidor, ver [README → Despliegue en un servidor](README.md#10-despliegue-en-un-servidor). Resumen:
+
 1. Clonar el repositorio e instalar (README, sección 1).
 2. Crear `backend/.env` desde `backend/.env.example` con las claves de ERPNext, el OAuth Client y una `SECRET_KEY` nueva.
 3. Registrar la Redirect URI del nuevo equipo en el OAuth Client de ERPNext.
 4. `npm run build` en `frontend/` y arrancar con `backend/scripts/serve.py`.
-5. Los Excel generados no viajan con el repositorio: copiar `backend/storage/` y `backend/data/portal.db` del equipo anterior, o generarlos de nuevo desde el portal.
+5. Los Excel generados y las fotos mensuales no viajan con el repositorio: copiar `backend/storage/`, `backend/data/portal.db` y `backend/data/fotos/` del equipo anterior (las fotos no se pueden volver a tomar al corte).

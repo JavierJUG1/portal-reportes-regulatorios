@@ -59,7 +59,18 @@ Después de cambiar `backend/.env` hay que reiniciar el servidor.
 
 El portal usa ERPNext como proveedor OAuth2 y ERPNext inicia sesión con Office 365 (mismo esquema de *Mapa Despacho · Gestión*).
 
-**OAuth Client en ERPNext** (*Integrations → OAuth Client → New*, una sola vez):
+**OAuth Client en ERPNext**: lo crea el script `configurar_oauth` con las credenciales de API de `backend/.env`, y además guarda el Client ID y el secret en ese `.env` (desde `backend/`):
+
+```powershell
+# Ver qué haría, sin cambiar nada
+.venv\Scripts\python -m scripts.configurar_oauth --redirect http://10.20.67.35/portal_reportes_crc/api/auth/callback --simular
+# Crear (o completar) el OAuth Client y guardar sus datos en backend/.env
+.venv\Scripts\python -m scripts.configurar_oauth --redirect http://10.20.67.35/portal_reportes_crc/api/auth/callback
+```
+
+Incluye siempre la `OAUTH_REDIRECT_URI` del `.env` y las que se pasen con `--redirect`. Se puede ejecutar varias veces: si el OAuth Client ya existe, solo agrega las URLs que falten. Después hay que reiniciar el portal. El usuario de API necesita permiso para crear *OAuth Client* (System Manager).
+
+Datos con los que queda (o para crearlo a mano en *Integrations → OAuth Client → New*):
 
 | Campo | Valor |
 |---|---|
@@ -104,7 +115,7 @@ Un solo proceso sirve la API y el portal en http://localhost:8000. Hay que volve
 - **Desde el portal** (solo System Manager): "Descargar Excel" en un periodo cerrado sin archivo lo genera y lo descarga; el ícono ⟳ junto a la versión genera una nueva versión con los datos actuales de ERPNext; "Reintentar" en un periodo con error.
 - **Versiones**: cada generación crea una versión (v1, v2…). La más reciente es *Vigente*; las anteriores quedan *Reemplazadas* y siguen descargables en **Historial**.
 - **Quién generó**: las automáticas se muestran como **"Generado por el sistema"**; las demás, con el nombre del usuario.
-- **Archivos**: `backend/storage/<reporte>/<año>/` y su registro en `backend/data/portal.db`.
+- **Archivos**: `backend/storage/<reporte>/<año>/` y su registro en `backend/data/portal.db`. Las fotos mensuales de la API, en `backend/data/fotos/` (ver 7).
 
 ## 6. Permisos
 
@@ -117,9 +128,15 @@ El rol se consulta en ERPNext con la API key del portal y se recuerda 5 minutos 
 
 ## 7. Contenido de los reportes
 
-**Fuente de datos**: `GET /api/method/monthly_subscription_snapshot?desde=AAAA-MM-DD&corte=AAAA-MM-DD` (Server Script *API Monthly Subscription Snapshot*), tal cual lo entrega la API para cada corte, más el catálogo de *Subscription Plan*.
-- F6 y cortes: una consulta por mes (`desde` = día 1, `corte` = último día del mes).
-- T1.2: `desde` = inicio del trimestre, `corte` = último día del trimestre.
+**Fuente de datos**: `GET /api/method/monthly_subscription_snapshot?desde=AAAA-MM-DD&corte=AAAA-MM-DD` (Server Script *API Monthly Subscription Snapshot*) para cada mes (`desde` = día 1, `corte` = último día), más el catálogo de *Subscription Plan*.
+
+**Foto mensual** (`backend/data/fotos/AAAA-MM.json.gz`): la API reconstruye al corte solo el **estado** de cada suscripción; los planes, la dirección, el estrato y las coordenadas los entrega como están en el momento de la consulta. Por eso el portal guarda la respuesta de cada mes (y el catálogo de planes) la primera vez que lo consulta después del cierre —normalmente el último día del mes a las 23:50, con la generación automática del corte— y desde entonces el F6, el T1.2 y el corte de ese mes salen de esa foto, sin volver a consultar ERPNext:
+- Regenerar un periodo da los mismos datos aunque después cambien las suscripciones en ERPNext.
+- F6: la foto de cada mes del trimestre. T1.2: la foto del mes de cierre del trimestre. Corte mensual: la foto de su mes (su hoja *Resumen* dice cuándo se tomó).
+- Un mes que aún no cierra no se puede generar ni se congela.
+- Si la foto se toma después del día de corte (servidor apagado al cierre, o un mes antiguo generado por primera vez) queda marcada como **tardía**: el estado es al corte, pero los planes y la ubicación son los de ese día; la versión lo muestra como advertencia.
+- Para volver a tomar la foto de un mes a propósito (p. ej. tras corregir un error de datos en ERPNext): `scripts.fotos tomar AAAA-MM --reemplazar` (ver 8); la anterior se conserva.
+- Las fotos empiezan en octubre de 2026. El 3T 2026 quedó con el F6 v2 y el T1.2 v1 (datos consultados el 26/10/2026); si se regenera, toma fotos tardías.
 
 **Plantillas**: las plantillas CRC originales (`backend/templates/`) se conservan intactas (hojas, notas de cada columna y hoja `INFO`); solo se escriben las filas de datos.
 
@@ -132,7 +149,7 @@ El rol se consulta en ERPNext con la API key del portal y se recuerda 5 minutos 
 | ANNO / TRIMESTRE / MES_DEL_TRIMESTRE | Del periodo; un grupo de filas por cada mes del trimestre |
 | CODIGO_DANE_MUNICIPIO | DIVIPOLA según la ubicación |
 | CODIGO_DANE_CENTRO_POBLADO | Código del centro poblado; `0` en cabecera o rural |
-| NOMBRE_CENTRO_POBLADO | Nombre DANE del centro poblado; en rural, la vereda; `0` en cabecera |
+| NOMBRE_CENTRO_POBLADO | Nombre DANE del centro poblado; en rural, la vereda; `0` en cabecera. **Un solo registro** por mes, municipio, código de centro poblado y segmento (MinTIC identifica el registro sin el nombre y rechaza los repetidos como "Registro Duplicado"): si en el código `0` de un municipio hay cabecera y veredas, se suman en un registro con nombre `0`; si son solo veredas, el nombre de la vereda o `RURAL DISPERSO` si son varias |
 | MODALIDAD_SERVICIO_TELEVISION | `1` Televisión por suscripción |
 | SEGMENTO | Estrato 1–6, `7` corporativo, `8` sin estratificar, `9` sin ánimo de lucro (cliente corporativo con nombre de fundación, asociación, corporación, JAC, iglesia…) |
 | TIPO_TECNOLOGIA | `5` IPTV por fibra |
@@ -168,6 +185,9 @@ Libro interno con dos hojas:
 # Probar la conexión con ERPNext: credenciales, endpoint, planes y roles (no genera nada)
 .venv\Scripts\python -m scripts.check_erpnext
 
+# Crear/actualizar el OAuth Client del portal en ERPNext y guardar sus datos en backend/.env (ver 3)
+.venv\Scripts\python -m scripts.configurar_oauth --redirect <otra URL de regreso> [--simular]
+
 # Generar un periodo a mano (queda como "Generado por el sistema")
 .venv\Scripts\python -m scripts.generate f6 2026-T3
 .venv\Scripts\python -m scripts.generate t12 2026-T3
@@ -175,6 +195,13 @@ Libro interno con dos hojas:
 
 # Eliminar versiones (registro + archivo). Sin --yes solo muestra lo que borraría.
 .venv\Scripts\python -m scripts.purge_versions --report f6 --period 2026-T3 --yes
+
+# Unir los registros duplicados (según MinTIC) de un F6 ya generado, sin consultar ERPNext, como nueva versión
+.venv\Scripts\python -m scripts.unificar_f6 2026-T3 --by correo@gigafibra.co --name "Nombre" [--simular]
+
+# Fotos mensuales: ver las guardadas, tomar la de un mes cerrado, o volver a tomarla a propósito
+.venv\Scripts\python -m scripts.fotos listar
+.venv\Scripts\python -m scripts.fotos tomar 2026-10 [--reemplazar]
 ```
 
 ## 9. Usuario de API en ERPNext
@@ -183,3 +210,51 @@ Libro interno con dos hojas:
 - ejecutar el método `monthly_subscription_snapshot`;
 - leer *Subscription Plan*;
 - leer *User* (para verificar el rol System Manager de quien intenta generar).
+
+## 10. Despliegue en un servidor
+
+### Compilar y empaquetar (en este equipo)
+
+```powershell
+cd frontend
+npm run build
+cd ..
+backend\.venv\Scripts\python deploy\empaquetar.py
+```
+
+Crea `release/portal-reportes-regulatorios_<fecha>_<commit>.zip` con el backend, el frontend compilado, las capas DANE, la documentación y `deploy/`. **No** lleva `backend/.env`, `backend/data/` ni `backend/storage/`.
+
+### Instalar en el servidor (Linux)
+
+Requisitos: Python 3.11+, salida a internet hacia `https://next.gigafibra.co` y un dominio con HTTPS. No necesita Node.
+
+```bash
+sudo mkdir -p /opt && cd /opt
+sudo unzip portal-reportes-regulatorios_<fecha>_<commit>.zip
+cd portal-reportes-regulatorios
+python3 -m venv backend/.venv
+backend/.venv/bin/pip install -r backend/requirements.txt
+cp backend/.env.example backend/.env
+```
+
+En `backend/.env` del servidor:
+
+| Variable | Valor |
+|---|---|
+| `APP_ENV` | `production` |
+| `SECRET_KEY` | cadena nueva, larga y aleatoria (`python3 -c "import secrets; print(secrets.token_urlsafe(48))"`) |
+| `ERPNEXT_API_KEY` / `ERPNEXT_API_SECRET` | las del usuario de API |
+| `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` | las del OAuth Client |
+| `OAUTH_REDIRECT_URI` | `https://<host-del-portal>/api/auth/callback` (agregarla también en las *Redirect URIs* del OAuth Client) |
+
+Luego:
+1. Probar ERPNext: `backend/.venv/bin/python -m scripts.check_erpnext` (desde `backend/`).
+2. Servicio: copiar `deploy/portal-reportes.service` a `/etc/systemd/system/`, ajustar usuario y rutas, y `sudo systemctl enable --now portal-reportes`.
+3. HTTPS: copiar `deploy/nginx-portal-reportes.conf` a nginx, reemplazar `HOST_DEL_PORTAL` y el certificado, y recargar nginx.
+4. Excel ya generados (opcional): copiar `backend/data/portal.db` y `backend/storage/` desde el equipo actual, con el servicio detenido.
+
+El portal debe correr como **un solo proceso** (la generación automática vive dentro de él). En un servidor Windows los pasos son los mismos con las rutas de Windows (`backend\.venv\Scripts\python`), y `serve.py` se registra como servicio (por ejemplo con NSSM) detrás de IIS o nginx con HTTPS.
+
+### Actualizar una versión instalada
+
+Detener el servicio, reemplazar las carpetas del paquete nuevo **sin tocar** `backend/.env`, `backend/data/` ni `backend/storage/`, ejecutar `backend/.venv/bin/pip install -r backend/requirements.txt` y volver a iniciar el servicio.

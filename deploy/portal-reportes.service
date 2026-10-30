@@ -1,0 +1,22 @@
+# Servicio systemd del portal (Linux). Copiar a /etc/systemd/system/portal-reportes.service y ajustar
+# User y rutas. Un solo proceso: la generación automática corre dentro de él (no usar varios workers).
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now portal-reportes
+#   journalctl -u portal-reportes -f        # registros
+
+[Unit]
+Description=Portal de reportes regulatorios CRC y MinTIC (Gigafibra)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=portal
+WorkingDirectory=/opt/portal-reportes-regulatorios
+ExecStart=/opt/portal-reportes-regulatorios/backend/.venv/bin/python backend/scripts/serve.py --host 127.0.0.1 --port 8000
+Environment=PYTHONUNBUFFERED=1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
